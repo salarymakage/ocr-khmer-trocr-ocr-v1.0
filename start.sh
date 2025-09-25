@@ -33,6 +33,8 @@ echo ""
 echo "⏳ Please wait while the model downloads and loads..."
 echo "   (You can monitor progress below)"
 echo ""
+echo "💡 If download fails, try: python download_model.py"
+echo ""
 
 # Start the application
 python app.py

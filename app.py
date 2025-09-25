@@ -28,19 +28,60 @@ def load_model():
         logger.info("Loading Khmer TrOCR model...")
         model_name = "songhieng/khmer-trocr-ocr-v1.0"
         
-        # Load processor and model
-        processor = TrOCRProcessor.from_pretrained(model_name)
-        model = VisionEncoderDecoderModel.from_pretrained(model_name)
-        
-        # Set device
+        # Set device first
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        model = model.to(device)
+        logger.info(f"Using device: {device}")
         
-        logger.info(f"Model loaded successfully on {device}")
-        return True
+        # Load processor and model with retry logic
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"Download attempt {attempt + 1}/{max_retries}")
+                
+                # Load processor
+                logger.info("Loading processor...")
+                processor = TrOCRProcessor.from_pretrained(
+                    model_name,
+                    resume_download=True,
+                    force_download=False
+                )
+                
+                # Load model
+                logger.info("Loading model...")
+                model = VisionEncoderDecoderModel.from_pretrained(
+                    model_name,
+                    resume_download=True,
+                    force_download=False,
+                    torch_dtype=torch.float32 if device == "cpu" else torch.float16
+                )
+                
+                # Move to device
+                model = model.to(device)
+                
+                # Test the model with a simple forward pass
+                logger.info("Testing model...")
+                test_input = torch.randn(1, 3, 384, 384).to(device)
+                with torch.no_grad():
+                    _ = model.encoder(test_input)
+                
+                logger.info(f"Model loaded and tested successfully on {device}")
+                return True
+                
+            except Exception as e:
+                logger.warning(f"Attempt {attempt + 1} failed: {str(e)}")
+                if attempt < max_retries - 1:
+                    logger.info("Retrying in 10 seconds...")
+                    import time
+                    time.sleep(10)
+                else:
+                    logger.error("All download attempts failed")
+                    raise e
+        
+        return False
         
     except Exception as e:
         logger.error(f"Error loading model: {str(e)}")
+        logger.error("Please check your internet connection and try again")
         return False
 
 def process_image(image):
