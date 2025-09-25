@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khmer OCR - Text Recognition</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .main-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .upload-section {
+            padding: 40px;
+            text-align: center;
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+            border-bottom: 1px solid #e1e8ed;
+        }
+
+        .upload-area {
+            border: 3px dashed #d1d9e6;
+            border-radius: 15px;
+            padding: 60px 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            background: white;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+            transform: translateY(-2px);
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #f0f4ff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            color: #7f8c8d;
+            font-size: 1rem;
+        }
+
+        #imageInput {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results-section {
+            padding: 40px;
+            display: none;
+        }
+
+        .image-preview {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .result-card {
+            background: #f8f9ff;
+            border-radius: 15px;
+            padding: 30px;
+            border-left: 5px solid #667eea;
+        }
+
+        .result-label {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .result-text {
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: #2c3e50;
+            line-height: 1.6;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            border: 2px solid #e8f0ff;
+            min-height: 80px;
+            word-wrap: break-word;
+            direction: ltr;
+            text-align: left;
+        }
+
+        .khmer-text {
+            font-family: 'Khmer OS', 'Khmer OS System', sans-serif;
+            font-size: 2rem;
+            line-height: 1.8;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #ffe6e6;
+            color: #d32f2f;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 5px solid #d32f2f;
+            display: none;
+        }
+
+        .copy-btn {
+            background: #28a745;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            margin-top: 15px;
+        }
+
+        .copy-btn:hover {
+            background: #218838;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .feature-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .feature-desc {
+            color: #7f8c8d;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .upload-area {
+                padding: 40px 20px;
+            }
+            
+            .upload-icon {
+                font-size: 3rem;
+            }
+            
+            .main-card {
+                margin: 0 10px;
+            }
+            
+            .container {
+                padding: 0 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-eye"></i> Khmer OCR</h1>
+            <p>Advanced Khmer Text Recognition powered by TrOCR</p>
+        </div>
+
+        <div class="main-card">
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="upload-text">Drop your image here or click to upload</div>
+                    <div class="upload-subtext">Supports PNG, JPG, JPEG, GIF, BMP files</div>
+                    <input type="file" id="imageInput" accept="image/*">
+                </div>
+                
+                <div class="upload-buttons">
+                    <button class="btn" id="uploadBtn">
+                        <i class="fas fa-upload"></i>
+                        Choose Image
+                    </button>
+                    <button class="btn" id="processBtn" style="display: none;">
+                        <i class="fas fa-magic"></i>
+                        Extract Text
+                    </button>
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Processing your image... This may take a moment.</p>
+            </div>
+
+            <div class="error" id="error"></div>
+
+            <div class="results-section" id="results">
+                <div class="image-preview" id="imagePreview"></div>
+                
+                <div class="result-card">
+                    <div class="result-label">
+                        <i class="fas fa-text-width"></i>
+                        Extracted Khmer Text:
+                    </div>
+                    <div class="result-text khmer-text" id="resultText"></div>
+                    <button class="btn copy-btn" id="copyBtn">
+                        <i class="fas fa-copy"></i>
+                        Copy Text
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-language"></i>
+                </div>
+                <div class="feature-title">Khmer Script Recognition</div>
+                <div class="feature-desc">Specialized in recognizing Khmer Unicode text with high accuracy using advanced AI models.</div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="feature-title">Fast Processing</div>
+                <div class="feature-desc">Quick text extraction powered by Microsoft's TrOCR architecture optimized for Khmer text.</div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="feature-title">Privacy Focused</div>
+                <div class="feature-desc">Your images are processed securely and are not stored on our servers.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const imageInput = document.getElementById('imageInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const processBtn = document.getElementById('processBtn');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const results = document.getElementById('results');
+        const imagePreview = document.getElementById('imagePreview');
+        const resultText = document.getElementById('resultText');
+        const copyBtn = document.getElementById('copyBtn');
+
+        let selectedFile = null;
+
+        // Upload area interactions
+        uploadArea.addEventListener('click', () => imageInput.click());
+        uploadBtn.addEventListener('click', () => imageInput.click());
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        // File input change
+        imageInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        // Process button
+        processBtn.addEventListener('click', processImage);
+
+        // Copy button
+        copyBtn.addEventListener('click', copyText);
+
+        function handleFileSelect(file) {
+            if (!file.type.startsWith('image/')) {
+                showError('Please select a valid image file.');
+                return;
+            }
+
+            if (file.size > 16 * 1024 * 1024) {
+                showError('File size must be less than 16MB.');
+                return;
+            }
+
+            selectedFile = file;
+            processBtn.style.display = 'inline-flex';
+            hideError();
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.innerHTML = `<img src="${e.target.result}" alt="Preview" class="preview-image">`;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function processImage() {
+            if (!selectedFile) {
+                showError('Please select an image first.');
+                return;
+            }
+
+            showLoading();
+            hideError();
+            results.style.display = 'none';
+
+            try {
+                const formData = new FormData();
+                formData.append('image', selectedFile);
+
+                const response = await fetch('/api/ocr', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resultText.textContent = data.text || 'No text detected';
+                    showResults();
+                } else {
+                    showError(data.error || 'Failed to process image');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                showError('Network error. Please try again.');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function copyText() {
+            const text = resultText.textContent;
+            if (text && text !== 'No text detected') {
+                navigator.clipboard.writeText(text).then(() => {
+                    const originalText = copyBtn.innerHTML;
+                    copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    setTimeout(() => {
+                        copyBtn.innerHTML = originalText;
+                    }, 2000);
+                }).catch(() => {
+                    showError('Failed to copy text to clipboard');
+                });
+            }
+        }
+
+        function showLoading() {
+            loading.style.display = 'block';
+        }
+
+        function hideLoading() {
+            loading.style.display = 'none';
+        }
+
+        function showResults() {
+            results.style.display = 'block';
+        }
+
+        function showError(message) {
+            error.textContent = message;
+            error.style.display = 'block';
+        }
+
+        function hideError() {
+            error.style.display = 'none';
+        }
+
+        // Health check on page load
+        fetch('/health')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.model_loaded) {
+                    showError('Model is loading... Please wait a moment and refresh the page.');
+                }
+            })
+            .catch(() => {
+                showError('Server is not responding. Please check if the application is running.');
+            });
+    </script>
+</body>
+</html>
